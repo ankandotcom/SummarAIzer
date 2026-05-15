@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SummarAIzer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="./images/logo.webp">
+</head>
+<body>
+    <div class="container">
+        <h1>SummarAIzer</h1>
+        <p> Welcome to the SummarAIzer! An one-stop solution that leverages the power of Artificial Intelligence to provide concise summaries of long texts. Whether you have a lengthy article, research paper, or any other text document that you want to summarize quickly, this is all you need. </p>
+        <p> Simply paste your text into the text area below and click the "Orange" button. </p>
+        <form id="summarizerForm">
+            <textarea id="textInput" placeholder="Paste in some text to summarize. (Min length is 200 chars. Max length is 100,000 chars.)" required></textarea>
+            <select id="languageSelect">
+                <option value="hi-IN">Hindi</option>
+                <option value="bn-IN">Bengali</option>
+                <option value="kn-IN">Kannada</option>
+                <option value="ta-LK">Tamil</option>
+                <option value="gu-IN">Gujarati</option>
+            </select>
+            <button id="submit-button" class="submit-button" type="submit">Summarize & Translate</button>
+        </form>
+        <div id="results">
+            <h3>Summary:</h3>
+            <p id="summary"></p>
+            <h3>Translated Summary:</h3>
+            <p id="translatedOutput"></p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
