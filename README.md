@@ -4,7 +4,7 @@
 
 The AI Text Summarizer and Text Translator App is a web application that allows users to summarize large chunks of text and translate them into different languages. The app leverages powerful machine learning models to generate concise summaries and utilizes the LibreTranslate API for translation services.
 
-**[Live Demo Link →]((https://summar-ai-zer.vercel.app/))**
+**[Live Demo Link →](https://summar-ai-zer.vercel.app/)**
 
 <p align="center">
 <img src="SummarAIzer.png" width="75%">
