@@ -18,58 +18,59 @@ function submitData(e) {
     e.preventDefault(); 
     submitButton.classList.add("submit-button--loading");
     
-    const text_to_summarize = textArea.value; //text to summarize
+    const text_to_summarize = textArea.value;
     const targetLang = document.getElementById('languageSelect').value;
     const summarizedTextArea = document.getElementById("summary");   
-    const translatedTextArea = document.getElementById("translatedOutput")
+    const translatedTextArea = document.getElementById("translatedOutput");
+    
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     
-        const requestOptions = {
-            method: 'POST',
-            headers: myHeaders,
-            body: JSON.stringify({ "text_to_summarize": text_to_summarize }),
-            redirect: "follow"
-        };
+    const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: JSON.stringify({ "text_to_summarize": text_to_summarize }),
+        redirect: "follow"
+    };
 
-        //relative path to “/summarize” because we will be calling the API from our Replit!  
-        fetch('/summarize', requestOptions)
-        .then(response => response.text()) // Response will be summarized text
-        .then(summary => {
-            // Doing something with the summary response from the back end API!
-            // Updating the output text area with new summary
-            summarizedTextArea.textContent = summary;   
-            
-            //const toTranslateText = summarizedTextArea.textContent;
+    // 1. Fetch Summary from your backend
+    fetch('/summarize', requestOptions)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Server returned status: ${response.status}`);
+        }
+        return response.text();
+    })
+    .then(summary => {
+        // Display the summary text
+        summarizedTextArea.textContent = summary;   
+        
+        // CRITICAL FIX: Safe URI encoding to prevent query string breakdown
+        const safeSummaryText = encodeURIComponent(summary.trim());
+        let apiUrl = `https://api.mymemory.translated.net/get?q=${safeSummaryText}&langpair=en|${targetLang}`;
 
-        // Construct the translation API URL
-        let apiUrl = `https://api.mymemory.translated.net/get?q=${summary}&langpair=${"en-GB"}|${targetLang}`;
+        // 2. Fetch Translation from third-party API
+        return fetch(apiUrl);
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data && data.responseData) {
+            translatedTextArea.textContent = data.responseData.translatedText;
+        }
 
-        // Fetch the translation from the API
-        fetch(apiUrl).then(res => res.json()).then(data => {
-        // Display the translated text in the output field
-        translatedTextArea.textContent = data.responseData.translatedText;
-
-        // Use alternative matches from the API response if available
-        data.matches.forEach(data => {
-            if (data.id === 0) { // Match id 0 typically contains the highest quality translation
-                translatedTextArea.textContent = data.translation;
-            }
-        });
-
-        // Reset the placeholder to its default state
-        //toText.setAttribute("placeholder", "Translation");
-        });
-
+        // Fallback for highest quality alternative match if it exists
+        if (data.matches && data.matches.length > 0) {
+            data.matches.forEach(match => {
+                if (match.id === 0 || match.id === "0") { 
+                    translatedTextArea.textContent = match.translation;
+                }
+            });
+        }
         submitButton.classList.remove("submit-button--loading");
-        
-        })
-        .catch(error => {
-            console.log(error.message);
-        });
-        
-        //const data = await response.json();
-        //document.getElementById('summaryOutput').textContent = data.summary;
-        //document.getElementById('translatedOutput').textContent = data.translatedSummary;
-    
+    })
+    .catch(error => {
+        console.error("Error encountered:", error.message);
+        submitButton.classList.remove("submit-button--loading");
+        summarizedTextArea.textContent = "An error occurred while processing your request.";
+    });
 }

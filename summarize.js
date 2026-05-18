@@ -4,7 +4,6 @@ const axios = require("axios");
 // This is the function where the call to the API is made. Returns the summarized text as a string.
 
 async function summarizeText(text) {
-	
 	let data = JSON.stringify({
 		inputs: text,
 		parameters: {
@@ -26,9 +25,18 @@ async function summarizeText(text) {
 
 	try {
 		const response = await axios.request(config);
-		return response.data[0].summary_text;
+		
+		// SAFELY DETERMINE STRUCTURE: checks if it's an array or a raw object response
+		if (Array.isArray(response.data) && response.data[0]) {
+			return response.data[0].summary_text;
+		} else if (response.data && response.data.summary_text) {
+			return response.data.summary_text;
+		} else {
+			return "Could not extract summary text format.";
+		}
 	} catch (err) {
-		console.log(err);
+		console.error("Hugging Face API Error:", err.response ? err.response.data : err.message);
+		throw new Error("Failed to connect or fetch from Hugging Face model endpoint.");
 	}
 }
 
