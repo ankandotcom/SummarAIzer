@@ -1,21 +1,33 @@
 const summarizeText = require("./huggingface");
 
 module.exports = async (req, res) => {
-  // Enable CORS if needed, and handle only POST requests
+  // Log the incoming request so we can see it in Vercel logs
+  console.log("METHOD:", req.method);
+  console.log("BODY TYPE:", typeof req.body);
+  console.log("BODY:", JSON.stringify(req.body));
+  console.log("ENV KEY EXISTS:", !!process.env.HUGGING_FACE_API_KEY);
+
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const text = req.body.text_to_summarize;
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+
+  const text = body?.text_to_summarize;
 
   if (!text) {
-    return res.status(400).send("No text was provided to summarize.");
+    return res.status(400).send("No text provided. Body was: " + JSON.stringify(body));
   }
 
   try {
     const summary = await summarizeText(text);
     res.status(200).send(summary);
   } catch (error) {
-    res.status(500).send(`Backend Error: ${error.message}`);
+    console.error("CRASH:", error.message);
+    // ✅ Send full error to browser so you can see it directly
+    res.status(500).send(`Error: ${error.message}`);
   }
 };

@@ -9,7 +9,7 @@ async function summarizeText(text, retries = 3) {
   const config = {
     method: "post",
     maxBodyLength: Infinity,
-    url: "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+    url: "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn", // ✅ fixed
     headers: {
       "Content-Type": "application/json",
       Authorization: "Bearer " + process.env.HUGGING_FACE_API_KEY,
@@ -20,14 +20,13 @@ async function summarizeText(text, retries = 3) {
   try {
     const response = await axios.request(config);
 
-    // ✅ Handle model loading state — wait and retry
     if (response.data?.error && response.data?.estimated_time) {
       if (retries > 0) {
-        const waitTime = (response.data.estimated_time || 20) * 1000;
-        await new Promise(resolve => setTimeout(resolve, Math.min(waitTime, 25000)));
+        const waitTime = Math.min(response.data.estimated_time * 1000, 25000);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         return summarizeText(text, retries - 1);
       }
-      throw new Error("Model is taking too long to load. Please try again in a moment.");
+      throw new Error("Model is taking too long to load. Please try again.");
     }
 
     if (Array.isArray(response.data) && response.data[0]?.summary_text) {
@@ -39,7 +38,6 @@ async function summarizeText(text, retries = 3) {
     }
 
   } catch (err) {
-    // ✅ Better error messages
     const hfError = err.response?.data;
     if (hfError?.error) throw new Error(`Hugging Face: ${hfError.error}`);
     throw new Error(err.message);
