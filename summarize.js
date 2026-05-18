@@ -1,46 +1,21 @@
-require("dotenv").config();
+const summarizeText = require("./huggingface");
 
-const axios = require("axios");
-// This is the function where the call to the API is made. Returns the summarized text as a string.
+module.exports = async (req, res) => {
+  // Enable CORS if needed, and handle only POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).send('Method Not Allowed');
+  }
 
-async function summarizeText(text) {
-	let data = JSON.stringify({
-		inputs: text,
-		parameters: {
-			max_length: 100,
-			min_length: 30,
-		},
-	});
+  const text = req.body.text_to_summarize;
 
-	let config = {
-		method: "post",
-		maxBodyLength: Infinity,
-		url: "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: "Bearer " + process.env.HUGGING_FACE_API_KEY,
-		},
-		data: data,
-	};
+  if (!text) {
+    return res.status(400).send("No text was provided to summarize.");
+  }
 
-	try {
-		const response = await axios.request(config);
-		
-		// SAFELY DETERMINE STRUCTURE: checks if it's an array or a raw object response
-		if (Array.isArray(response.data) && response.data[0]) {
-			return response.data[0].summary_text;
-		} else if (response.data && response.data.summary_text) {
-			return response.data.summary_text;
-		} else {
-			return "Could not extract summary text format.";
-		}
-	} catch (err) {
-		console.error("Hugging Face API Error:", err.response ? err.response.data : err.message);
-		throw new Error("Failed to connect or fetch from Hugging Face model endpoint.");
-	}
-}
-
-// Allows for summarizeText() to be called outside of this file
-
-module.exports = summarizeText;
-
+  try {
+    const summary = await summarizeText(text);
+    res.status(200).send(summary);
+  } catch (error) {
+    res.status(500).send(`Backend Error: ${error.message}`);
+  }
+};

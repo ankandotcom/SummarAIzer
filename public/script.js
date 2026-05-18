@@ -34,7 +34,7 @@ function submitData(e) {
     };
 
     // 1. Fetch Summary from your backend
-    fetch('/summarize', requestOptions)
+    fetch('/api/summarize', requestOptions)
     .then(response => {
         if (!response.ok) {
             throw new Error(`Server returned status: ${response.status}`);
