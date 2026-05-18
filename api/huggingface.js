@@ -1,12 +1,12 @@
 const axios = require("axios");
 
-async function summarizeText(text) {
-  let data = JSON.stringify({
+async function summarizeText(text, retries = 3) {
+  const data = JSON.stringify({
     inputs: text,
     parameters: { max_length: 100, min_length: 30 },
   });
 
-  let config = {
+  const config = {
     method: "post",
     maxBodyLength: Infinity,
     url: "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
@@ -14,20 +14,35 @@ async function summarizeText(text) {
       "Content-Type": "application/json",
       Authorization: "Bearer " + process.env.HUGGING_FACE_API_KEY,
     },
-    data: data,
+    data,
   };
 
   try {
     const response = await axios.request(config);
-    if (Array.isArray(response.data) && response.data[0]) {
+
+    // ✅ Handle model loading state — wait and retry
+    if (response.data?.error && response.data?.estimated_time) {
+      if (retries > 0) {
+        const waitTime = (response.data.estimated_time || 20) * 1000;
+        await new Promise(resolve => setTimeout(resolve, Math.min(waitTime, 25000)));
+        return summarizeText(text, retries - 1);
+      }
+      throw new Error("Model is taking too long to load. Please try again in a moment.");
+    }
+
+    if (Array.isArray(response.data) && response.data[0]?.summary_text) {
       return response.data[0].summary_text;
-    } else if (response.data && response.data.summary_text) {
+    } else if (response.data?.summary_text) {
       return response.data.summary_text;
     } else {
-      return "Could not extract summary text format.";
+      throw new Error("Unexpected response format from Hugging Face.");
     }
+
   } catch (err) {
-    throw new Error(err.response ? JSON.stringify(err.response.data) : err.message);
+    // ✅ Better error messages
+    const hfError = err.response?.data;
+    if (hfError?.error) throw new Error(`Hugging Face: ${hfError.error}`);
+    throw new Error(err.message);
   }
 }
 
